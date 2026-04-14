@@ -24,7 +24,9 @@ if st.button("Sync Subtitles"):
             srt_path = tmp_srt.name
 
         # Load Whisper model
-        model = whisper.load_model("base")
+        @st.cache_resource
+def load_model():
+    return whisper.load_model("tiny")
         result = model.transcribe(audio_path)
 
         # Read subtitles
