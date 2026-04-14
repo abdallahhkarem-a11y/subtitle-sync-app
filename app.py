@@ -6,12 +6,21 @@ import tempfile
 
 st.title("AI Subtitle Sync Tool")
 
+# ✅ Load model once (cached)
+@st.cache_resource
+def load_model():
+    return whisper.load_model("tiny")
+
+
+# Upload inputs
 audio_file = st.file_uploader("Upload Audio/Video", type=["mp4", "mp3", "wav"])
 srt_file = st.file_uploader("Upload Arabic SRT", type=["srt"])
 
+
 if st.button("Sync Subtitles"):
     if audio_file and srt_file:
-        st.write("Processing... please wait ⏳")
+
+        st.write("Preparing files...")
 
         # Save temp audio
         with tempfile.NamedTemporaryFile(delete=False) as tmp_audio:
@@ -23,18 +32,17 @@ if st.button("Sync Subtitles"):
             tmp_srt.write(srt_file.read())
             srt_path = tmp_srt.name
 
-        # Load Whisper model
-        @st.cache_resource
-def load_model():
-    return whisper.load_model("tiny")
+        # ✅ Load model
         model = load_model()
 
-with st.spinner("Processing... please wait ⏳"):
-    result = model.transcribe(audio_path)
+        # ✅ Transcribe with spinner
+        with st.spinner("Transcribing audio... please wait ⏳"):
+            result = model.transcribe(audio_path)
 
-        # Read subtitles
+        # Read subtitles safely
         with open(srt_path, encoding="utf-8") as f:
-    subs = list(srt.parse(f.read()))
+            subs = list(srt.parse(f.read()))
+
         segments = result["segments"]
 
         # Align subtitles to audio
@@ -43,11 +51,11 @@ with st.spinner("Processing... please wait ⏳"):
                 sub.start = timedelta(seconds=segments[i]["start"])
                 sub.end = timedelta(seconds=segments[i]["end"])
 
-        # Output
+        # Output new SRT
         output = srt.compose(subs)
 
         st.success("Done ✅")
         st.download_button("Download Synced SRT", output, file_name="synced.srt")
 
     else:
-        st.error("Please upload both files")
+        st.error("Please upload both audio and SRT")
