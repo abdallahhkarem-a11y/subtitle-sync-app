@@ -27,10 +27,14 @@ if st.button("Sync Subtitles"):
         @st.cache_resource
 def load_model():
     return whisper.load_model("tiny")
-        result = model.transcribe(audio_path)
+        model = load_model()
+
+with st.spinner("Processing... please wait ⏳"):
+    result = model.transcribe(audio_path)
 
         # Read subtitles
-        subs = list(srt.parse(open(srt_path, encoding="utf-8").read()))
+        with open(srt_path, encoding="utf-8") as f:
+    subs = list(srt.parse(f.read()))
         segments = result["segments"]
 
         # Align subtitles to audio
